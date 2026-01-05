@@ -1,56 +1,59 @@
 <script>
-function smartClassify(query, title, author, subjects = []) {
-  const text = (
-    query + " " +
-    title + " " +
-    author + " " +
-    subjects.join(" ")
-  ).toLowerCase();
+function classifyByIntent(query) {
+  const q = query.toLowerCase();
 
-  /* ---------- DDC LOGIC ---------- */
+  // ---------- DDC (INTENT-BASED) ----------
   let ddc = "000";
-  let ddcNote = "General works (fallback)";
+  let ddcNote = "General works";
 
-  if (text.includes("library") || text.includes("librarian")) {
+  if (q.includes("library science") || q.includes("librarianship")) {
     ddc = "020.1";
-    ddcNote = "Library science – theory & principles";
+    ddcNote = "Library science – theory and principles";
   }
-  else if (text.includes("classification")) {
+  else if (q.includes("classification")) {
     ddc = "025.42";
-    ddcNote = "Classification and indexing";
+    ddcNote = "Library classification and indexing";
   }
-  else if (text.includes("information retrieval")) {
+  else if (q.includes("information retrieval")) {
     ddc = "025.04";
-    ddcNote = "Information storage and retrieval";
+    ddcNote = "Information storage and retrieval systems";
   }
-  else if (text.includes("philosophy") || text.includes("rousseau")) {
-    ddc = "194";
-    ddcNote = "Modern Western philosophy (France)";
+  else if (q.includes("cataloguing") || q.includes("cataloging")) {
+    ddc = "025.3";
+    ddcNote = "Cataloguing";
   }
-  else if (text.includes("political")) {
-    ddc = "320";
-    ddcNote = "Political science";
+  else if (q.includes("political philosophy")) {
+    ddc = "320.01";
+    ddcNote = "Political philosophy";
+  }
+  else if (q.includes("relativity")) {
+    ddc = "530.12";
+    ddcNote = "Relativity (Physics)";
   }
 
-  /* ---------- COLON CLASSIFICATION (SIMPLIFIED PMEST) ---------- */
+  // ---------- COLON CLASSIFICATION (PMEST) ----------
   let cc = "Z";
-  let ccNote = "General knowledge (fallback)";
+  let ccNote = "General knowledge";
 
-  if (text.includes("library")) {
+  if (q.includes("library science")) {
     cc = "2;44";
-    ccNote = "P: Library Science | E: Principles";
+    ccNote = "P: Library Science | E: Theory & Principles";
   }
-  else if (text.includes("classification")) {
+  else if (q.includes("classification")) {
     cc = "2;42";
     ccNote = "P: Library Science | E: Classification";
   }
-  else if (text.includes("information retrieval")) {
+  else if (q.includes("information retrieval")) {
     cc = "2;7";
-    ccNote = "P: Library Science | E: Retrieval processes";
+    ccNote = "P: Library Science | E: Retrieval";
   }
-  else if (text.includes("rousseau") || text.includes("philosophy")) {
+  else if (q.includes("political philosophy")) {
     cc = "A;6";
-    ccNote = "P: Philosophy | E: Political thought";
+    ccNote = "P: Philosophy | E: Political theory";
+  }
+  else if (q.includes("relativity")) {
+    cc = "B;12";
+    ccNote = "P: Physics | E: Relativity theory";
   }
 
   return { ddc, ddcNote, cc, ccNote };
@@ -62,46 +65,16 @@ async function searchBook() {
   const result = document.getElementById("result");
 
   if (!q) {
-    status.innerText = "Please enter ISBN, Title, or Author.";
+    status.innerText = "Please enter a subject, title, or ISBN.";
     return;
   }
 
-  status.innerText = "Searching Open Library...";
-  result.innerHTML = "";
-
-  let url = "";
-  let isISBN = /^[0-9Xx-]{10,17}$/.test(q);
-
-  if (isISBN) {
-    url = "https://openlibrary.org/api/books?bibkeys=ISBN:" + q + "&format=json&jscmd=data";
-  } else {
-    url = "https://openlibrary.org/search.json?q=" + encodeURIComponent(q);
-  }
-
-  const response = await fetch(url);
-  const data = await response.json();
-
-  let title = "", author = "", subjects = [];
-
-  if (data.docs) {
-    title = data.docs[0].title || "";
-    author = data.docs[0].author_name?.[0] || "";
-    subjects = data.docs[0].subject || [];
-  } else {
-    const key = Object.keys(data)[0];
-    title = data[key].title || "";
-    author = data[key].authors?.[0]?.name || "";
-    subjects = data[key].subjects || [];
-  }
-
-  const cls = smartClassify(q, title, author, subjects);
-
-  status.innerText = "Result found:";
+  status.innerText = "Classifying subject intent...";
+  const cls = classifyByIntent(q);
 
   result.innerHTML = `
-    <h3>${title}</h3>
-    <p><strong>Author:</strong> ${author || "N/A"}</p>
-    <p><strong>Subjects:</strong> ${subjects.slice(0,5).join(", ") || "N/A"}</p>
+    <h3>Subject analysed:</h3>
+    <p><strong>${q}</strong></p>
 
     <hr>
     <h4>📘 Dewey Decimal Classification (Suggested)</h4>
@@ -110,7 +83,9 @@ async function searchBook() {
     <h4>📗 Colon Classification (Suggested)</h4>
     <p><strong>${cls.cc}</strong> — ${cls.ccNote}</p>
 
-    <p><em>Generated using hybrid query–metadata–rule logic.</em></p>
+    <p><em>Classification generated from subject-intent analysis, independent of noisy bibliographic search results.</em></p>
   `;
+
+  status.innerText = "Classification completed.";
 }
 </script>
