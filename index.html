@@ -1,28 +1,40 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>DDC & CC Open Classification Tool</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-</head>
-
-<body style="font-family: Arial, sans-serif; margin:40px;">
-
-<h1>DDC & CC Open Classification Tool</h1>
-<p>Free and open experimental tool for library classification support.</p>
-
-<hr>
-
-<h3>Search by ISBN / Title / Author</h3>
-
-<input type="text" id="query" placeholder="Enter ISBN / Title / Author" style="width:320px; padding:8px;">
-<button onclick="searchBook()">Search</button>
-
-<p id="status"></p>
-
-<div id="result"></div>
-
 <script>
+function classify(subjects = [], title = "") {
+  let text = (subjects.join(" ") + " " + title).toLowerCase();
+
+  // ---- DDC RULES (BASIC, EXTENSIBLE) ----
+  let ddc = "Not determined";
+  let ddcNote = "";
+
+  if (text.includes("library") || text.includes("information science")) {
+    ddc = "020.1";
+    ddcNote = "Library science – theory and principles";
+  } else if (text.includes("information retrieval")) {
+    ddc = "025.04";
+    ddcNote = "Information storage and retrieval";
+  } else if (text.includes("computer")) {
+    ddc = "004";
+    ddcNote = "Computer science";
+  } else if (text.includes("education")) {
+    ddc = "370";
+    ddcNote = "Education";
+  }
+
+  // ---- COLON CLASSIFICATION (PMEST – SIMPLIFIED) ----
+  let cc = "Not determined";
+  let ccNote = "";
+
+  if (text.includes("library")) {
+    cc = "2;44";
+    ccNote = "P: Library Science | E: Principles";
+  } else if (text.includes("information retrieval")) {
+    cc = "2;7";
+    ccNote = "P: Library Science | E: Retrieval processes";
+  }
+
+  return { ddc, ddcNote, cc, ccNote };
+}
+
 async function searchBook() {
   const q = document.getElementById("query").value.trim();
   const status = document.getElementById("status");
@@ -57,24 +69,31 @@ async function searchBook() {
   if (data.docs) {
     book.title = data.docs[0].title;
     book.author = data.docs[0].author_name?.[0];
-    book.subjects = data.docs[0].subject?.slice(0, 5);
+    book.subjects = data.docs[0].subject || [];
   } else {
     const key = Object.keys(data)[0];
     book.title = data[key].title;
     book.author = data[key].authors?.[0]?.name;
-    book.subjects = data[key].subjects?.slice(0, 5);
+    book.subjects = data[key].subjects || [];
   }
+
+  let cls = classify(book.subjects, book.title);
 
   status.innerText = "Result found:";
 
   result.innerHTML = `
     <h3>${book.title || "N/A"}</h3>
     <p><strong>Author:</strong> ${book.author || "N/A"}</p>
-    <p><strong>Subjects:</strong> ${book.subjects ? book.subjects.join(", ") : "N/A"}</p>
-    <p><em>DDC & CC suggestions will be generated based on subject analysis.</em></p>
+    <p><strong>Subjects:</strong> ${book.subjects.slice(0,5).join(", ") || "N/A"}</p>
+
+    <hr>
+    <h4>📘 Dewey Decimal Classification (Suggested)</h4>
+    <p><strong>${cls.ddc}</strong> — ${cls.ddcNote}</p>
+
+    <h4>📗 Colon Classification (Suggested)</h4>
+    <p><strong>${cls.cc}</strong> — ${cls.ccNote}</p>
+
+    <p><em>Note: Class numbers are generated using transparent rule-based subject analysis.</em></p>
   `;
 }
 </script>
-
-</body>
-</html>
