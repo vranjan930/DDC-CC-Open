@@ -1,8 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DDC & CC Open Classification Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; }
+    input { padding: 8px; width: 320px; }
+    button { padding: 8px 14px; }
+    hr { margin: 20px 0; }
+  </style>
+</head>
+
+<body>
+
+<h1>DDC & CC Open Classification Tool</h1>
+<p>Free and open experimental tool for library classification support.</p>
+
+<hr>
+
+<h3>Classify by Subject / Title / Concept</h3>
+
+<input type="text" id="query" placeholder="e.g. Information retrieval">
+<button onclick="searchBook()">Classify</button>
+
+<p id="status"></p>
+
+<div id="result"></div>
+
 <script>
 function classifyByIntent(query) {
   const q = query.toLowerCase();
 
-  // ---------- DDC (INTENT-BASED) ----------
+  // ---------- DDC ----------
   let ddc = "000";
   let ddcNote = "General works";
 
@@ -31,7 +61,7 @@ function classifyByIntent(query) {
     ddcNote = "Relativity (Physics)";
   }
 
-  // ---------- COLON CLASSIFICATION (PMEST) ----------
+  // ---------- COLON CLASSIFICATION ----------
   let cc = "Z";
   let ccNote = "General knowledge";
 
@@ -59,33 +89,37 @@ function classifyByIntent(query) {
   return { ddc, ddcNote, cc, ccNote };
 }
 
-async function searchBook() {
+function searchBook() {
   const q = document.getElementById("query").value.trim();
   const status = document.getElementById("status");
   const result = document.getElementById("result");
 
   if (!q) {
-    status.innerText = "Please enter a subject, title, or ISBN.";
+    status.innerText = "Please enter a subject or concept.";
     return;
   }
 
-  status.innerText = "Classifying subject intent...";
+  status.innerText = "Classifying subject intent…";
+
   const cls = classifyByIntent(q);
 
   result.innerHTML = `
-    <h3>Subject analysed:</h3>
-    <p><strong>${q}</strong></p>
+    <h3>Classification Result</h3>
+    <p><strong>Input analysed:</strong> ${q}</p>
 
     <hr>
-    <h4>📘 Dewey Decimal Classification (Suggested)</h4>
+    <h4>📘 Dewey Decimal Classification</h4>
     <p><strong>${cls.ddc}</strong> — ${cls.ddcNote}</p>
 
-    <h4>📗 Colon Classification (Suggested)</h4>
+    <h4>📗 Colon Classification</h4>
     <p><strong>${cls.cc}</strong> — ${cls.ccNote}</p>
 
-    <p><em>Classification generated from subject-intent analysis, independent of noisy bibliographic search results.</em></p>
+    <p><em>Generated using rule-based subject-intent analysis.</em></p>
   `;
 
   status.innerText = "Classification completed.";
 }
 </script>
+
+</body>
+</html>
