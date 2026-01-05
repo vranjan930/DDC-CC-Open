@@ -1,73 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>DDC & CC Open Classification Tool</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body { font-family: Arial, sans-serif; margin: 40px; }
-    input { padding: 8px; width: 320px; }
-    button { padding: 8px 14px; }
-    hr { margin: 20px 0; }
-  </style>
+<meta charset="UTF-8">
+<title>DDC & CC Open Classification Tool</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body { font-family: Arial, sans-serif; margin: 40px; }
+input { padding: 8px; width: 360px; }
+button { padding: 8px 16px; margin-left: 6px; }
+h4 { margin-bottom: 5px; }
+</style>
 </head>
 
 <body>
 
 <h1>DDC & CC Open Classification Tool</h1>
-<p>Free and open experimental tool for library classification support.</p>
+<p><b>Purpose:</b> Subject-based classification support using DDC and Colon Classification.</p>
 
 <hr>
 
-<h3>Classify by Subject / Title / Concept</h3>
+<h3>Enter Subject / Title / Concept</h3>
 
-<input type="text" id="query" placeholder="e.g. Information retrieval">
-<button onclick="searchBook()">Classify</button>
+<input type="text" id="query" placeholder="e.g. Information retrieval, Library classification">
+<button onclick="classify()">Classify</button>
 
-<p id="status"></p>
-
-<div id="result"></div>
+<div id="output" style="margin-top:25px;"></div>
 
 <script>
-function classifyByIntent(query) {
-  const q = query.toLowerCase();
+function classify() {
 
-  // ---------- DDC ----------
-  let ddc = "000";
-  let ddcNote = "General works";
+  const q = document.getElementById("query").value.toLowerCase();
+  let ddc = "", ddcNote = "", cc = "", ccNote = "";
 
+  /* ---------- DDC LOGIC ---------- */
+  if (q.includes("library")) {
+    ddc = "020";
+    ddcNote = "Library & Information Sciences";
+  }
   if (q.includes("library science") || q.includes("librarianship")) {
     ddc = "020.1";
     ddcNote = "Library science – theory and principles";
   }
-  else if (q.includes("classification")) {
+  if (q.includes("classification")) {
     ddc = "025.42";
-    ddcNote = "Library classification and indexing";
+    ddcNote = "Classification and indexing";
   }
-  else if (q.includes("information retrieval")) {
-    ddc = "025.04";
-    ddcNote = "Information storage and retrieval systems";
-  }
-  else if (q.includes("cataloguing") || q.includes("cataloging")) {
+  if (q.includes("cataloguing") || q.includes("cataloging")) {
     ddc = "025.3";
     ddcNote = "Cataloguing";
   }
-  else if (q.includes("political philosophy")) {
-    ddc = "320.01";
-    ddcNote = "Political philosophy";
+  if (q.includes("information retrieval")) {
+    ddc = "025.04";
+    ddcNote = "Information storage and retrieval";
   }
-  else if (q.includes("relativity")) {
+  if (q.includes("artificial intelligence") || q.includes("machine learning")) {
+    ddc = "006.3";
+    ddcNote = "Artificial intelligence";
+  }
+  if (q.includes("political science")) {
+    ddc = "320";
+    ddcNote = "Political science";
+  }
+  if (q.includes("philosophy")) {
+    ddc = "100";
+    ddcNote = "Philosophy";
+  }
+  if (q.includes("relativity")) {
     ddc = "530.12";
-    ddcNote = "Relativity (Physics)";
+    ddcNote = "Relativity theory (Physics)";
   }
 
-  // ---------- COLON CLASSIFICATION ----------
-  let cc = "Z";
-  let ccNote = "General knowledge";
+  if (!ddc) {
+    ddc = "000";
+    ddcNote = "General works (fallback)";
+  }
 
+  /* ---------- COLON CLASSIFICATION ---------- */
   if (q.includes("library science")) {
     cc = "2;44";
-    ccNote = "P: Library Science | E: Theory & Principles";
+    ccNote = "P: Library Science | E: Theory";
   }
   else if (q.includes("classification")) {
     cc = "2;42";
@@ -77,47 +88,39 @@ function classifyByIntent(query) {
     cc = "2;7";
     ccNote = "P: Library Science | E: Retrieval";
   }
-  else if (q.includes("political philosophy")) {
-    cc = "A;6";
-    ccNote = "P: Philosophy | E: Political theory";
+  else if (q.includes("artificial intelligence")) {
+    cc = "X;6";
+    ccNote = "P: Computer Science | E: AI";
+  }
+  else if (q.includes("political science")) {
+    cc = "A;3";
+    ccNote = "P: Political Science";
+  }
+  else if (q.includes("philosophy")) {
+    cc = "A";
+    ccNote = "P: Philosophy";
   }
   else if (q.includes("relativity")) {
     cc = "B;12";
-    ccNote = "P: Physics | E: Relativity theory";
+    ccNote = "P: Physics | E: Relativity";
+  }
+  else {
+    cc = "Z";
+    ccNote = "General knowledge (fallback)";
   }
 
-  return { ddc, ddcNote, cc, ccNote };
-}
-
-function searchBook() {
-  const q = document.getElementById("query").value.trim();
-  const status = document.getElementById("status");
-  const result = document.getElementById("result");
-
-  if (!q) {
-    status.innerText = "Please enter a subject or concept.";
-    return;
-  }
-
-  status.innerText = "Classifying subject intent…";
-
-  const cls = classifyByIntent(q);
-
-  result.innerHTML = `
+  document.getElementById("output").innerHTML = `
     <h3>Classification Result</h3>
-    <p><strong>Input analysed:</strong> ${q}</p>
+    <p><b>Input analysed:</b> ${q}</p>
 
-    <hr>
     <h4>📘 Dewey Decimal Classification</h4>
-    <p><strong>${cls.ddc}</strong> — ${cls.ddcNote}</p>
+    <p><b>${ddc}</b> — ${ddcNote}</p>
 
     <h4>📗 Colon Classification</h4>
-    <p><strong>${cls.cc}</strong> — ${cls.ccNote}</p>
+    <p><b>${cc}</b> — ${ccNote}</p>
 
-    <p><em>Generated using rule-based subject-intent analysis.</em></p>
+    <p><em>Generated using rule-based subject analysis (library-correct).</em></p>
   `;
-
-  status.innerText = "Classification completed.";
 }
 </script>
 
