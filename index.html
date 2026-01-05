@@ -1,11 +1,82 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>DDC & CC Open Classifier</title>
   <meta charset="UTF-8">
+  <title>DDC & CC Open Classification Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
-<body>
-  <h1>DDC & CC Open Classification Tool</h1>
-  <p>Free and open tool for DDC and Colon Classification.</p>
+
+<body style="font-family: Arial, sans-serif; margin:40px;">
+
+<h1>DDC & CC Open Classification Tool</h1>
+<p>Free and open experimental tool for library classification support.</p>
+
+<hr>
+
+<h3>Search by ISBN / Title / Author</h3>
+
+<input type="text" id="query" placeholder="Enter ISBN / Title / Author" style="width:300px; padding:8px;">
+<button onclick="searchBook()">Search</button>
+
+<p id="status"></p>
+
+<div id="result"></div>
+
+<script>
+async function searchBook() {
+  const q = document.getElementById("query").value.trim();
+  const status = document.getElementById("status");
+  const result = document.getElementById("result");
+
+  if (!q) {
+    status.innerText = "Please enter ISBN, Title, or Author.";
+    return;
+  }
+
+  status.innerText = "Searching Open Library...";
+  result.innerHTML = "";
+
+  let url = "";
+
+  if (/^[0-9Xx-]{10,17}$/.test(q)) {
+    url = "https://openlibrary.org/api/books?bibkeys=ISBN:" + q + "&format=json&jscmd=data";
+  } else {
+    url = "https://openlibrary.org/search.json?q=" + encodeURIComponent(q);
+  }
+
+  const response = await fetch(url);
+  const data = await response.json();
+
+  if (Object.keys(data).length === 0 || data.docs?.length === 0) {
+    status.innerText = "No data found.";
+    return;
+  }
+
+  let book = {};
+
+  if (data.docs) {
+    book.title = data.docs[0].title;
+    book.author = data.docs[0].author_name?.[0];
+    book.subjects = data.docs[0].subject?.slice(0, 5);
+  } else {
+    const key = Object.keys(data)[0];
+    book.title = data[key].title;
+    book.author = data[key].authors?.[0]?.name;
+    book.subjects = data[key].subjects?.slice(0, 5);
+  }
+
+  status.innerText = "Result found:";
+
+  result.innerHTML = `
+    <h3>${book.title || "N/A"}</h3>
+    <p><strong>Author:</strong> ${book.author || "N/A"}</p>
+    <p><strong>Subjects:</strong> ${book.subjects ? book.subjects.join(", ") : "N/A"}</p>
+
+    <hr>
+    <p><em>DDC & CC suggestions will be generated based on subject analysis.</em></p>
+  `;
+}
+</script>
+
 </body>
 </html>
