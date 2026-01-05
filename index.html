@@ -15,7 +15,7 @@
 
 <h3>Search by ISBN / Title / Author</h3>
 
-<input type="text" id="query" placeholder="Enter ISBN / Title / Author" style="width:300px; padding:8px;">
+<input type="text" id="query" placeholder="Enter ISBN / Title / Author" style="width:320px; padding:8px;">
 <button onclick="searchBook()">Search</button>
 
 <p id="status"></p>
@@ -71,8 +71,6 @@ async function searchBook() {
     <h3>${book.title || "N/A"}</h3>
     <p><strong>Author:</strong> ${book.author || "N/A"}</p>
     <p><strong>Subjects:</strong> ${book.subjects ? book.subjects.join(", ") : "N/A"}</p>
-
-    <hr>
     <p><em>DDC & CC suggestions will be generated based on subject analysis.</em></p>
   `;
 }
