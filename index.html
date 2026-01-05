@@ -1,35 +1,56 @@
 <script>
-function classify(subjects = [], title = "") {
-  let text = (subjects.join(" ") + " " + title).toLowerCase();
+function smartClassify(query, title, author, subjects = []) {
+  const text = (
+    query + " " +
+    title + " " +
+    author + " " +
+    subjects.join(" ")
+  ).toLowerCase();
 
-  // ---- DDC RULES (BASIC, EXTENSIBLE) ----
-  let ddc = "Not determined";
-  let ddcNote = "";
+  /* ---------- DDC LOGIC ---------- */
+  let ddc = "000";
+  let ddcNote = "General works (fallback)";
 
-  if (text.includes("library") || text.includes("information science")) {
+  if (text.includes("library") || text.includes("librarian")) {
     ddc = "020.1";
-    ddcNote = "Library science – theory and principles";
-  } else if (text.includes("information retrieval")) {
+    ddcNote = "Library science – theory & principles";
+  }
+  else if (text.includes("classification")) {
+    ddc = "025.42";
+    ddcNote = "Classification and indexing";
+  }
+  else if (text.includes("information retrieval")) {
     ddc = "025.04";
     ddcNote = "Information storage and retrieval";
-  } else if (text.includes("computer")) {
-    ddc = "004";
-    ddcNote = "Computer science";
-  } else if (text.includes("education")) {
-    ddc = "370";
-    ddcNote = "Education";
+  }
+  else if (text.includes("philosophy") || text.includes("rousseau")) {
+    ddc = "194";
+    ddcNote = "Modern Western philosophy (France)";
+  }
+  else if (text.includes("political")) {
+    ddc = "320";
+    ddcNote = "Political science";
   }
 
-  // ---- COLON CLASSIFICATION (PMEST – SIMPLIFIED) ----
-  let cc = "Not determined";
-  let ccNote = "";
+  /* ---------- COLON CLASSIFICATION (SIMPLIFIED PMEST) ---------- */
+  let cc = "Z";
+  let ccNote = "General knowledge (fallback)";
 
   if (text.includes("library")) {
     cc = "2;44";
     ccNote = "P: Library Science | E: Principles";
-  } else if (text.includes("information retrieval")) {
+  }
+  else if (text.includes("classification")) {
+    cc = "2;42";
+    ccNote = "P: Library Science | E: Classification";
+  }
+  else if (text.includes("information retrieval")) {
     cc = "2;7";
     ccNote = "P: Library Science | E: Retrieval processes";
+  }
+  else if (text.includes("rousseau") || text.includes("philosophy")) {
+    cc = "A;6";
+    ccNote = "P: Philosophy | E: Political thought";
   }
 
   return { ddc, ddcNote, cc, ccNote };
@@ -49,8 +70,9 @@ async function searchBook() {
   result.innerHTML = "";
 
   let url = "";
+  let isISBN = /^[0-9Xx-]{10,17}$/.test(q);
 
-  if (/^[0-9Xx-]{10,17}$/.test(q)) {
+  if (isISBN) {
     url = "https://openlibrary.org/api/books?bibkeys=ISBN:" + q + "&format=json&jscmd=data";
   } else {
     url = "https://openlibrary.org/search.json?q=" + encodeURIComponent(q);
@@ -59,32 +81,27 @@ async function searchBook() {
   const response = await fetch(url);
   const data = await response.json();
 
-  if (Object.keys(data).length === 0 || data.docs?.length === 0) {
-    status.innerText = "No data found.";
-    return;
-  }
-
-  let book = {};
+  let title = "", author = "", subjects = [];
 
   if (data.docs) {
-    book.title = data.docs[0].title;
-    book.author = data.docs[0].author_name?.[0];
-    book.subjects = data.docs[0].subject || [];
+    title = data.docs[0].title || "";
+    author = data.docs[0].author_name?.[0] || "";
+    subjects = data.docs[0].subject || [];
   } else {
     const key = Object.keys(data)[0];
-    book.title = data[key].title;
-    book.author = data[key].authors?.[0]?.name;
-    book.subjects = data[key].subjects || [];
+    title = data[key].title || "";
+    author = data[key].authors?.[0]?.name || "";
+    subjects = data[key].subjects || [];
   }
 
-  let cls = classify(book.subjects, book.title);
+  const cls = smartClassify(q, title, author, subjects);
 
   status.innerText = "Result found:";
 
   result.innerHTML = `
-    <h3>${book.title || "N/A"}</h3>
-    <p><strong>Author:</strong> ${book.author || "N/A"}</p>
-    <p><strong>Subjects:</strong> ${book.subjects.slice(0,5).join(", ") || "N/A"}</p>
+    <h3>${title}</h3>
+    <p><strong>Author:</strong> ${author || "N/A"}</p>
+    <p><strong>Subjects:</strong> ${subjects.slice(0,5).join(", ") || "N/A"}</p>
 
     <hr>
     <h4>📘 Dewey Decimal Classification (Suggested)</h4>
@@ -93,7 +110,7 @@ async function searchBook() {
     <h4>📗 Colon Classification (Suggested)</h4>
     <p><strong>${cls.cc}</strong> — ${cls.ccNote}</p>
 
-    <p><em>Note: Class numbers are generated using transparent rule-based subject analysis.</em></p>
+    <p><em>Generated using hybrid query–metadata–rule logic.</em></p>
   `;
 }
 </script>
